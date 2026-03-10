@@ -159,15 +159,21 @@ def extract_health_indicators(text: str) -> dict[str, Any]:
         for pattern in patterns:
             match = re.search(pattern, text, re.IGNORECASE)
             if match:
-                value = float(match.group(1))
-                unit = match.group(2)
+                try:
+                    value = float(match.group(1))
+                    unit = match.group(2)
+                except (ValueError, TypeError):
+                    continue
                 extracted[indicator] = {"value": value, "unit": unit}
 
                 # Check if value is abnormal
                 if indicator in REFERENCE_RANGES:
                     ref_range = REFERENCE_RANGES[indicator]
-                    ref_min = float(ref_range["min"])
-                    ref_max = float(ref_range["max"])
+                    try:
+                        ref_min = float(ref_range["min"])
+                        ref_max = float(ref_range["max"])
+                    except (ValueError, TypeError):
+                        continue
 
                     # Skip comparison if max is 0 (indicating no upper limit)
                     if ref_max > 0 and (value < ref_min or value > ref_max):
@@ -234,7 +240,7 @@ def analyze_medical_report(
 
 
 def generate_health_insights(
-    indicators: dict[str, Any], abnormalities: list[dict], age: int | None, gender: str | None
+    indicators: dict[str, Any], abnormalities: list[dict[str, Any]], age: int | None, gender: str | None
 ) -> dict[str, Any]:
     """Generate detailed health insights from indicators.
 
@@ -292,7 +298,7 @@ def generate_health_insights(
     return insights
 
 
-def interpret_system_abnormalities(system: str, abnormalities: list[dict]) -> str:
+def interpret_system_abnormalities(system: str, abnormalities: list[dict[str, Any]]) -> str:
     """Intertract abnormalities for a specific body system.
 
     Args:
@@ -313,7 +319,7 @@ def interpret_system_abnormalities(system: str, abnormalities: list[dict]) -> st
     return interpretations.get(system, "Abnormalities detected that require medical evaluation.")
 
 
-def assess_health_risks(abnormalities: list[dict], age: int | None, gender: str | None) -> dict[str, Any]:
+def assess_health_risks(abnormalities: list[dict[str, Any]], age: int | None, gender: str | None) -> dict[str, Any]:
     """Assess health risks based on abnormalities and patient profile.
 
     Args:
@@ -324,7 +330,7 @@ def assess_health_risks(abnormalities: list[dict], age: int | None, gender: str 
     Returns:
         Risk assessment results
     """
-    risk_factors = []
+    risk_factors: list[str] = []
     risk_level = "low"
 
     # Risk assessment based on abnormalities
@@ -380,7 +386,7 @@ def get_followup_recommendations(risk_level: str) -> str:
     return recommendations.get(risk_level, "Consult with healthcare provider.")
 
 
-def generate_recommendations(abnormalities: list[dict], indicators: dict[str, Any]) -> list[str]:
+def generate_recommendations(abnormalities: list[dict[str, Any]], indicators: dict[str, Any]) -> list[str]:
     """Generate specific recommendations based on test results.
 
     Args:
@@ -412,7 +418,7 @@ def generate_recommendations(abnormalities: list[dict], indicators: dict[str, An
     return recommendations
 
 
-def generate_analysis_summary(abnormalities: list[dict], risk_assessment: dict[str, Any]) -> str:
+def generate_analysis_summary(abnormalities: list[dict[str, Any]], risk_assessment: dict[str, Any]) -> str:
     """Generate a concise summary of the analysis.
 
     Args:

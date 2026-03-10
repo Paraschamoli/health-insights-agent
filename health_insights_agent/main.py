@@ -72,7 +72,7 @@ def initialize_health_tools() -> None:
     print("✅ Health analysis tools initialized")
 
 
-def load_config() -> dict:
+def load_config() -> dict[str, Any]:
     """Load agent configuration from project root."""
     # Get path to agent_config.json in project root
     config_path = Path(__file__).parent / "agent_config.json"
