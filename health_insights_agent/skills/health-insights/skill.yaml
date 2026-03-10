@@ -5,8 +5,8 @@ author: paras@getbindu.com
 
 # Description
 description: |
-  HIA (Health Insights Agent) performs comprehensive medical report analysis and health insights 
-  using advanced AI capabilities. Specializes in blood report analysis, health indicator extraction, 
+  HIA (Health Insights Agent) performs comprehensive medical report analysis and health insights
+  using advanced AI capabilities. Specializes in blood report analysis, health indicator extraction,
   risk assessment, and personalized health recommendations.
 
 # Tags and Modes
@@ -89,9 +89,9 @@ allowed_tools:
 # Rich Documentation
 documentation:
   overview: |
-    HIA (Health Insights Agent) is a specialized AI system for analyzing medical reports, 
-    particularly blood tests and laboratory results. The agent uses advanced natural language 
-    processing to extract relevant health indicators, compare them against medical reference ranges, 
+    HIA (Health Insights Agent) is a specialized AI system for analyzing medical reports,
+    particularly blood tests and laboratory results. The agent uses advanced natural language
+    processing to extract relevant health indicators, compare them against medical reference ranges,
     and provide comprehensive health insights.
 
     Key capabilities include:
@@ -101,8 +101,8 @@ documentation:
     - Risk stratification and preventive care recommendations
     - Age and gender-specific analysis
 
-    The system is designed to complement professional medical care by providing 
-    preliminary analysis and health education, while always including appropriate 
+    The system is designed to complement professional medical care by providing
+    preliminary analysis and health education, while always including appropriate
     medical disclaimers.
 
   use_cases:

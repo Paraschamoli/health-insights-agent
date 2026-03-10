@@ -7,11 +7,8 @@ health indicators, and medical insights similar to HIA functionality.
 import logging
 import re
 import sys
-from typing import Any, Dict, List, Optional
 from datetime import datetime
-
-import pdfplumber
-import pandas as pd
+from typing import Any
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -27,10 +24,27 @@ logging.basicConfig(
 
 # Health indicators to track
 HEALTH_INDICATORS = [
-    "hemoglobin", "glucose", "cholesterol", "triglycerides", 
-    "hdl", "ldl", "wbc", "rbc", "platelet", "creatinine",
-    "alt", "ast", "alp", "bilirubin", "tsh", "t4", "sodium",
-    "potassium", "bun", "protein", "albumin"
+    "hemoglobin",
+    "glucose",
+    "cholesterol",
+    "triglycerides",
+    "hdl",
+    "ldl",
+    "wbc",
+    "rbc",
+    "platelet",
+    "creatinine",
+    "alt",
+    "ast",
+    "alp",
+    "bilirubin",
+    "tsh",
+    "t4",
+    "sodium",
+    "potassium",
+    "bun",
+    "protein",
+    "albumin",
 ]
 
 # Reference ranges for common blood tests
@@ -58,12 +72,13 @@ REFERENCE_RANGES = {
     "albumin": {"min": 3.5, "max": 5.5, "unit": "g/dL"},
 }
 
-def extract_text_from_pdf(pdf_content: str) -> Dict[str, Any]:
+
+def extract_text_from_pdf(pdf_content: str) -> dict[str, Any]:
     """Extract and analyze text from medical report PDF content.
-    
+
     Args:
         pdf_content: Raw text content from PDF
-        
+
     Returns:
         Dictionary with extracted text and analysis results
     """
@@ -72,54 +87,67 @@ def extract_text_from_pdf(pdf_content: str) -> Dict[str, Any]:
         if not pdf_content or len(pdf_content.strip()) < 50:
             return {
                 "success": False,
-                "error": "Extracted text is too short. Please ensure the PDF contains valid medical report text."
+                "error": "Extracted text is too short. Please ensure the PDF contains valid medical report text.",
             }
-        
+
         # Check for medical content
         medical_terms = [
-            'blood', 'test', 'report', 'laboratory', 'lab', 'patient', 'specimen',
-            'reference range', 'analysis', 'results', 'medical', 'diagnostic',
-            'hemoglobin', 'wbc', 'rbc', 'platelet', 'glucose', 'creatinine'
+            "blood",
+            "test",
+            "report",
+            "laboratory",
+            "lab",
+            "patient",
+            "specimen",
+            "reference range",
+            "analysis",
+            "results",
+            "medical",
+            "diagnostic",
+            "hemoglobin",
+            "wbc",
+            "rbc",
+            "platelet",
+            "glucose",
+            "creatinine",
         ]
-        
+
         text_lower = pdf_content.lower()
         term_matches = sum(1 for term in medical_terms if term in text_lower)
-        
+
         if term_matches < 3:
             return {
                 "success": False,
-                "error": "The uploaded content doesn't appear to be a medical report. Please upload a valid medical report."
+                "error": "The uploaded content doesn't appear to be a medical report. Please upload a valid medical report.",
             }
-        
+
         # Extract health indicators
         extracted_values = extract_health_indicators(pdf_content)
-        
+
         return {
             "success": True,
             "text": pdf_content,
             "extracted_values": extracted_values,
-            "medical_terms_found": term_matches
-        }
-        
-    except Exception as e:
-        logger.error(f"Error processing PDF content: {e}")
-        return {
-            "success": False,
-            "error": f"Error processing medical report: {str(e)}"
+            "medical_terms_found": term_matches,
         }
 
-def extract_health_indicators(text: str) -> Dict[str, Any]:
+    except Exception as e:
+        logger.error(f"Error processing PDF content: {e}")
+        return {"success": False, "error": f"Error processing medical report: {e!s}"}
+
+
+def extract_health_indicators(text: str) -> dict[str, Any]:
     """Extract health indicator values from medical report text.
-    
+
     Args:
         text: Medical report text
-        
+
     Returns:
         Dictionary with extracted indicator values and analysis
     """
     extracted = {}
     abnormalities = []
-    
+
     for indicator in HEALTH_INDICATORS:
         # Look for patterns like "Hemoglobin: 13.5 g/dL" or "Glucose 95 mg/dL"
         patterns = [
@@ -127,20 +155,20 @@ def extract_health_indicators(text: str) -> Dict[str, Any]:
             rf"{indicator}\s*([\d.]+)\s*([a-zA-Z/µ]+)",
             rf"([\d.]+)\s*([a-zA-Z/µ]+)\s*{indicator}",
         ]
-        
+
         for pattern in patterns:
             match = re.search(pattern, text, re.IGNORECASE)
             if match:
                 value = float(match.group(1))
                 unit = match.group(2)
                 extracted[indicator] = {"value": value, "unit": unit}
-                
+
                 # Check if value is abnormal
                 if indicator in REFERENCE_RANGES:
                     ref_range = REFERENCE_RANGES[indicator]
                     ref_min = float(ref_range["min"])
                     ref_max = float(ref_range["max"])
-                    
+
                     # Skip comparison if max is 0 (indicating no upper limit)
                     if ref_max > 0 and (value < ref_min or value > ref_max):
                         abnormalities.append({
@@ -148,25 +176,23 @@ def extract_health_indicators(text: str) -> Dict[str, Any]:
                             "value": value,
                             "unit": unit,
                             "reference_range": ref_range,
-                            "status": "low" if value < ref_min else "high"
+                            "status": "low" if value < ref_min else "high",
                         })
                 break
-    
-    return {
-        "extracted_indicators": extracted,
-        "abnormalities": abnormalities,
-        "total_indicators": len(extracted)
-    }
 
-def analyze_medical_report(report_text: str, patient_age: Optional[int] = None, 
-                          patient_gender: Optional[str] = None) -> Dict[str, Any]:
+    return {"extracted_indicators": extracted, "abnormalities": abnormalities, "total_indicators": len(extracted)}
+
+
+def analyze_medical_report(
+    report_text: str, patient_age: int | None = None, patient_gender: str | None = None
+) -> dict[str, Any]:
     """Perform comprehensive medical report analysis.
-    
+
     Args:
         report_text: Medical report text
         patient_age: Patient age (optional)
         patient_gender: Patient gender (optional)
-        
+
     Returns:
         Comprehensive medical analysis results
     """
@@ -175,116 +201,104 @@ def analyze_medical_report(report_text: str, patient_age: Optional[int] = None,
         extraction_result = extract_text_from_pdf(report_text)
         if not extraction_result["success"]:
             return extraction_result
-        
+
         # Get extracted values
         extracted_data = extraction_result["extracted_values"]
         indicators = extracted_data.get("extracted_indicators", {})
         abnormalities = extracted_data.get("abnormalities", [])
-        
+
         # Generate health insights
-        health_insights = generate_health_insights(
-            indicators, abnormalities, patient_age, patient_gender
-        )
-        
+        health_insights = generate_health_insights(indicators, abnormalities, patient_age, patient_gender)
+
         # Risk assessment
         risk_assessment = assess_health_risks(abnormalities, patient_age, patient_gender)
-        
+
         # Recommendations
         recommendations = generate_recommendations(abnormalities, indicators)
-        
+
         return {
             "success": True,
             "analysis_timestamp": datetime.now().isoformat(),
-            "patient_profile": {
-                "age": patient_age,
-                "gender": patient_gender
-            },
+            "patient_profile": {"age": patient_age, "gender": patient_gender},
             "extracted_indicators": indicators,
             "abnormalities": abnormalities,
             "health_insights": health_insights,
             "risk_assessment": risk_assessment,
             "recommendations": recommendations,
-            "summary": generate_analysis_summary(abnormalities, risk_assessment)
-        }
-        
-    except Exception as e:
-        logger.error(f"Error in medical analysis: {e}")
-        return {
-            "success": False,
-            "error": f"Medical analysis failed: {str(e)}"
+            "summary": generate_analysis_summary(abnormalities, risk_assessment),
         }
 
-def generate_health_insights(indicators: Dict[str, Any], abnormalities: List[Dict], 
-                           age: Optional[int], gender: Optional[str]) -> Dict[str, Any]:
+    except Exception as e:
+        logger.error(f"Error in medical analysis: {e}")
+        return {"success": False, "error": f"Medical analysis failed: {e!s}"}
+
+
+def generate_health_insights(
+    indicators: dict[str, Any], abnormalities: list[dict], age: int | None, gender: str | None
+) -> dict[str, Any]:
     """Generate detailed health insights from indicators.
-    
+
     Args:
         indicators: Extracted health indicators
         abnormalities: List of abnormal values
         age: Patient age
         gender: Patient gender
-        
+
     Returns:
         Health insights analysis
     """
-    insights = {
-        "overall_health_status": "normal",
-        "system_analysis": {},
-        "key_findings": []
-    }
-    
+    insights = {"overall_health_status": "normal", "system_analysis": {}, "key_findings": []}
+
     # Analyze different body systems
     system_categories = {
         "blood_count": ["hemoglobin", "wbc", "rbc", "platelets"],
         "liver_function": ["alt", "ast", "alp", "bilirubin"],
         "kidney_function": ["creatinine", "bun", "electrolytes"],
         "metabolic": ["glucose", "cholesterol", "hdl", "ldl", "triglycerides"],
-        "thyroid": ["tsh", "t4"]
+        "thyroid": ["tsh", "t4"],
     }
-    
+
     for system, indicators_list in system_categories.items():
-        system_abnormalities = [
-            ab for ab in abnormalities 
-            if ab["indicator"] in indicators_list
-        ]
-        
+        system_abnormalities = [ab for ab in abnormalities if ab["indicator"] in indicators_list]
+
         if system_abnormalities:
             insights["system_analysis"][system] = {
                 "status": "abnormal",
                 "abnormalities": system_abnormalities,
-                "interpretation": interpret_system_abnormalities(system, system_abnormalities)
+                "interpretation": interpret_system_abnormalities(system, system_abnormalities),
             }
         else:
             insights["system_analysis"][system] = {
                 "status": "normal",
-                "interpretation": f"{system.replace('_', ' ').title()} appears to be functioning normally."
+                "interpretation": f"{system.replace('_', ' ').title()} appears to be functioning normally.",
             }
-    
+
     # Determine overall health status
     if abnormalities:
         if len(abnormalities) > 3:
             insights["overall_health_status"] = "requires_attention"
         else:
             insights["overall_health_status"] = "mildly_abnormal"
-    
+
     # Generate key findings
     for abnormality in abnormalities:
         indicator = abnormality["indicator"]
         value = abnormality["value"]
         status = abnormality["status"]
-        
+
         finding = f"{indicator.title()} is {status} at {value} {abnormality['unit']}"
         insights["key_findings"].append(finding)
-    
+
     return insights
 
-def interpret_system_abnormalities(system: str, abnormalities: List[Dict]) -> str:
+
+def interpret_system_abnormalities(system: str, abnormalities: list[dict]) -> str:
     """Intertract abnormalities for a specific body system.
-    
+
     Args:
         system: Body system name
         abnormalities: List of abnormalities in that system
-        
+
     Returns:
         Interpretation text
     """
@@ -293,30 +307,30 @@ def interpret_system_abnormalities(system: str, abnormalities: List[Dict]) -> st
         "liver_function": "Liver function abnormalities suggest potential liver inflammation or damage.",
         "kidney_function": "Kidney function abnormalities may indicate reduced kidney performance.",
         "metabolic": "Metabolic abnormalities suggest potential diabetes, cholesterol issues, or metabolic syndrome.",
-        "thyroid": "Thyroid abnormalities indicate potential thyroid dysfunction requiring evaluation."
+        "thyroid": "Thyroid abnormalities indicate potential thyroid dysfunction requiring evaluation.",
     }
-    
+
     return interpretations.get(system, "Abnormalities detected that require medical evaluation.")
 
-def assess_health_risks(abnormalities: List[Dict], age: Optional[int], 
-                       gender: Optional[str]) -> Dict[str, Any]:
+
+def assess_health_risks(abnormalities: list[dict], age: int | None, gender: str | None) -> dict[str, Any]:
     """Assess health risks based on abnormalities and patient profile.
-    
+
     Args:
         abnormalities: List of abnormal values
         age: Patient age
         gender: Patient gender
-        
+
     Returns:
         Risk assessment results
     """
     risk_factors = []
     risk_level = "low"
-    
+
     # Risk assessment based on abnormalities
     for abnormality in abnormalities:
         indicator = abnormality["indicator"]
-        
+
         if indicator in ["cholesterol", "ldl", "triglycerides"]:
             risk_factors.append("Cardiovascular disease risk")
         elif indicator in ["glucose"]:
@@ -327,63 +341,65 @@ def assess_health_risks(abnormalities: List[Dict], age: Optional[int],
             risk_factors.append("Kidney disease risk")
         elif indicator in ["hemoglobin", "rbc"]:
             risk_factors.append("Anemia risk")
-    
+
     # Age-related risks
     if age:
         if age > 50:
             risk_factors.append("Age-related health risks")
         if age > 65:
             risk_level = "moderate"
-    
+
     # Determine overall risk level
     if len(abnormalities) > 4:
         risk_level = "high"
     elif len(abnormalities) > 2:
         risk_level = "moderate"
-    
+
     return {
         "risk_level": risk_level,
         "risk_factors": list(set(risk_factors)),
-        "recommended_followup": get_followup_recommendations(risk_level)
+        "recommended_followup": get_followup_recommendations(risk_level),
     }
+
 
 def get_followup_recommendations(risk_level: str) -> str:
     """Get follow-up recommendations based on risk level.
-    
+
     Args:
         risk_level: Assessed risk level
-        
+
     Returns:
         Follow-up recommendation text
     """
     recommendations = {
         "low": "Routine follow-up with healthcare provider recommended.",
         "moderate": "Schedule medical consultation within 2-4 weeks for further evaluation.",
-        "high": "Seek medical attention promptly for comprehensive evaluation."
+        "high": "Seek medical attention promptly for comprehensive evaluation.",
     }
-    
+
     return recommendations.get(risk_level, "Consult with healthcare provider.")
 
-def generate_recommendations(abnormalities: List[Dict], indicators: Dict[str, Any]) -> List[str]:
+
+def generate_recommendations(abnormalities: list[dict], indicators: dict[str, Any]) -> list[str]:
     """Generate specific recommendations based on test results.
-    
+
     Args:
         abnormalities: List of abnormal values
         indicators: All extracted indicators
-        
+
     Returns:
         List of recommendations
     """
     recommendations = []
-    
+
     # General recommendations
     recommendations.append("Maintain a healthy lifestyle with balanced diet and regular exercise.")
     recommendations.append("Stay hydrated and get adequate sleep.")
-    
+
     # Specific recommendations based on abnormalities
     for abnormality in abnormalities:
         indicator = abnormality["indicator"]
-        
+
         if indicator in ["glucose"] and abnormality["status"] == "high":
             recommendations.append("Reduce sugar intake and monitor carbohydrate consumption.")
         elif indicator in ["cholesterol", "ldl"] and abnormality["status"] == "high":
@@ -392,79 +408,80 @@ def generate_recommendations(abnormalities: List[Dict], indicators: Dict[str, An
             recommendations.append("Ensure adequate iron intake through diet or supplements.")
         elif indicator in ["alt", "ast"] and abnormality["status"] == "high":
             recommendations.append("Limit alcohol consumption and maintain healthy weight.")
-    
+
     return recommendations
 
-def generate_analysis_summary(abnormalities: List[Dict], risk_assessment: Dict[str, Any]) -> str:
+
+def generate_analysis_summary(abnormalities: list[dict], risk_assessment: dict[str, Any]) -> str:
     """Generate a concise summary of the analysis.
-    
+
     Args:
         abnormalities: List of abnormal values
         risk_assessment: Risk assessment results
-        
+
     Returns:
         Analysis summary text
     """
     if not abnormalities:
         return "All test results appear to be within normal ranges. Overall health status is good."
-    
+
     abnormal_count = len(abnormalities)
     risk_level = risk_assessment.get("risk_level", "low")
-    
+
     summary = f"Analysis found {abnormal_count} abnormal value(s). "
     summary += f"Overall risk level is assessed as {risk_level}. "
-    
+
     if risk_level == "high":
         summary += "Medical consultation is recommended."
     elif risk_level == "moderate":
         summary += "Follow-up with healthcare provider advised."
     else:
         summary += "Monitor these values and maintain healthy lifestyle."
-    
+
     return summary
 
-def get_medical_reference_ranges() -> Dict[str, Any]:
+
+def get_medical_reference_ranges() -> dict[str, Any]:
     """Get reference ranges for common medical tests.
-    
+
     Returns:
         Dictionary of reference ranges
     """
     return REFERENCE_RANGES
 
-def validate_medical_content(text: str) -> Dict[str, Any]:
+
+def validate_medical_content(text: str) -> dict[str, Any]:
     """Validate if text appears to be from a medical report.
-    
+
     Args:
         text: Text to validate
-        
+
     Returns:
         Validation results
     """
     medical_keywords = [
-        'blood test', 'laboratory', 'diagnostic', 'medical report',
-        'hemoglobin', 'glucose', 'cholesterol', 'platelets',
-        'reference range', 'patient', 'specimen'
+        "blood test",
+        "laboratory",
+        "diagnostic",
+        "medical report",
+        "hemoglobin",
+        "glucose",
+        "cholesterol",
+        "platelets",
+        "reference range",
+        "patient",
+        "specimen",
     ]
-    
+
     text_lower = text.lower()
     keyword_count = sum(1 for keyword in medical_keywords if keyword in text_lower)
-    
+
     # Minimum text length check
     if len(text.strip()) < 50:
-        return {
-            "is_valid": False,
-            "reason": "Text too short to be a valid medical report"
-        }
-    
+        return {"is_valid": False, "reason": "Text too short to be a valid medical report"}
+
     # Keyword threshold
     if keyword_count < 3:
-        return {
-            "is_valid": False,
-            "reason": "Text doesn't contain enough medical terminology"
-        }
-    
-    return {
-        "is_valid": True,
-        "confidence": min(keyword_count / 10, 1.0),
-        "keywords_found": keyword_count
-    }
+        return {"is_valid": False, "reason": "Text doesn't contain enough medical terminology"}
+
+    return {"is_valid": True, "confidence": min(keyword_count / 10, 1.0), "keywords_found": keyword_count}

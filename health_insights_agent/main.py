@@ -26,13 +26,13 @@ from dotenv import load_dotenv
 
 from health_insights_agent.tools import (
     analyze_medical_report,
-    extract_text_from_pdf,
-    extract_health_indicators,
-    generate_health_insights,
     assess_health_risks,
+    extract_health_indicators,
+    extract_text_from_pdf,
+    generate_health_insights,
+    generate_recommendations,
     get_medical_reference_ranges,
     validate_medical_content,
-    generate_recommendations,
 )
 
 # Load environment variables from .env file
@@ -52,6 +52,7 @@ class HealthAnalysisTools(Toolkit):
     """Custom toolkit for health analysis functions."""
 
     def __init__(self):
+        """Initialize the health analysis toolkit."""
         super().__init__(name="health_analysis_tools")
         self.register(analyze_medical_report)
         self.register(extract_text_from_pdf)
@@ -110,7 +111,7 @@ async def initialize_agent() -> None:
             if tool is not None
         ],
         description=dedent("""\
-            You are an expert medical analyst with comprehensive knowledge of laboratory medicine, 
+            You are an expert medical analyst with comprehensive knowledge of laboratory medicine,
             hematology, and clinical diagnostics. Your expertise encompasses: 🩺
 
             - Complete Blood Count (CBC) analysis and interpretation
@@ -240,7 +241,6 @@ async def handler(messages: list[dict[str, str]]) -> Any:
     Returns:
         Agent response (ManifestWorker will handle extraction)
     """
-
     # Run agent with messages
     global _initialized
 

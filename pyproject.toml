@@ -108,6 +108,18 @@ ignore = [
     "E501",
     # DoNotAssignLambda
     "E731",
+    # TRY003 - Allow long messages in ValueError for better error context
+    "TRY003",
+    # TRY300 - Allow early returns
+    "TRY300",
+    # TRY400 - Allow logging.error in specific cases
+    "TRY400",
+    # C901 - Allow complex medical analysis functions
+    "C901",
+    # D107 - Allow missing docstring in __init__
+    "D107",
+    # D202 - Allow blank lines after docstrings
+    "D202",
 ]
 
 [tool.ruff.lint.per-file-ignores]
