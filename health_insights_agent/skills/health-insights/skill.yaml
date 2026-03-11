@@ -5,9 +5,9 @@ author: paras@getbindu.com
 
 # Description
 description: |
-  HIA (Health Insights Agent) performs comprehensive medical report analysis and health insights
-  using advanced AI capabilities. Specializes in blood report analysis, health indicator extraction,
-  risk assessment, and personalized health recommendations.
+  Medical report analysis agent that extracts health indicators from blood test reports,
+  compares values against reference ranges, identifies abnormalities, and provides health insights
+  with risk assessment and recommendations.
 
 # Tags and Modes
 tags:
@@ -30,55 +30,51 @@ output_modes:
 
 # Example Queries
 examples:
-  - "Analyze my blood report and tell me about my health"
-  - "Extract health indicators from this medical report text"
-  - "What are the abnormalities in my blood test results?"
-  - "Assess my health risks based on these lab values"
-  - "Provide recommendations based on my medical report"
-  - "Is my hemoglobin level normal? Here's my report..."
-  - "Evaluate my liver function tests and provide insights"
+  - "Analyze the following blood test report for a 35-year-old male patient and provide a detailed medical insight report"
+  - "Provide comprehensive health insight report for blood test values: Hemoglobin 12.8 g/dL, Glucose 110 mg/dL, Cholesterol 220 mg/dL"
+  - "Interpret blood test parameters, identify abnormal values, and suggest lifestyle improvements"
 
 # Detailed Capabilities
 capabilities_detail:
   primary_capability:
     supported: true
-    description: "Comprehensive medical report analysis with health insights and risk assessment"
+    description: "Blood test report analysis with health indicator extraction and risk assessment"
     features:
-      - "Blood report text extraction and validation"
-      - "Health indicator identification and extraction"
-      - "Reference range comparison and abnormality detection"
-      - "Multi-system health analysis (CBC, liver, kidney, metabolic, thyroid)"
-      - "Risk assessment based on age, gender, and medical findings"
-      - "Personalized health recommendations and lifestyle guidance"
-      - "Medical disclaimer integration for responsible AI"
-    limitations: "Analysis is for informational purposes only and not a substitute for professional medical advice"
+      - "Text validation for medical content (minimum 50 chars, medical terminology check)"
+      - "Regex-based extraction of 22 health indicators (hemoglobin, glucose, cholesterol, HDL, LDL, triglycerides, WBC, RBC, platelets, creatinine, ALT, AST, ALP, bilirubin, TSH, T4, sodium, potassium, BUN, protein, albumin)"
+      - "Reference range comparison using hardcoded ranges"
+      - "Abnormality detection (high/low status)"
+      - "System-based analysis (blood_count, liver_function, kidney_function, metabolic, thyroid)"
+      - "Risk level assessment (low/moderate/high) based on abnormality count and age"
+      - "Lifestyle and dietary recommendations based on specific abnormalities"
+      - "Markdown-formatted health report generation"
+    limitations: "Text-based extraction only, no PDF parsing, no image analysis, no prescription recommendations, not for emergency diagnosis"
 
   secondary_capability:
-    supported: true
-    description: "Health monitoring and preventive care insights"
-    features:
-      - "Trend analysis for repeated measurements"
-      - "Preventive health screening recommendations"
-      - "Lifestyle modification guidance"
-      - "Follow-up testing suggestions"
+    supported: false
+    planned_version: "2.0.0"
+    description: "Trend analysis and historical tracking not implemented in current version"
 
 # Requirements
 requirements:
   packages:
-    - "pdfplumber>=0.11.5"
-    - "pandas>=2.0.0"
-    - "agno>=0.1.0"
-    - "langchain>=0.3.0"
+    - "agno"
+    - "bindu"
+    - "python-dotenv"
   system:
     - "Python 3.12+"
-  min_memory_mb: 512
+  min_memory_mb: 256
+  api_keys:
+    - "OPENROUTER_API_KEY (required)"
+    - "MEM0_API_KEY (optional, for memory features)"
 
 # Performance Metrics
 performance:
-  avg_processing_time_ms: 2000
-  max_concurrent_requests: 5
+  avg_processing_time_ms: 48000
+  max_concurrent_requests: 10
   memory_per_request_mb: 256
   scalability: horizontal
+  async_task_pattern: true
 
 # Tool Restrictions
 allowed_tools:
@@ -89,233 +85,212 @@ allowed_tools:
 # Rich Documentation
 documentation:
   overview: |
-    HIA (Health Insights Agent) is a specialized AI system for analyzing medical reports,
-    particularly blood tests and laboratory results. The agent uses advanced natural language
-    processing to extract relevant health indicators, compare them against medical reference ranges,
-    and provide comprehensive health insights.
+    Health Insights Agent analyzes blood test reports using OpenRouter LLM (default: Claude 3.5 Sonnet)
+    with custom health analysis tools. Built on Agno framework with Bindu protocol integration.
 
-    Key capabilities include:
-    - Extraction of health indicators from unstructured medical text
-    - Clinical interpretation of abnormal values
-    - Multi-system health assessment
-    - Risk stratification and preventive care recommendations
-    - Age and gender-specific analysis
+    Core workflow:
+    1. Validates medical text content (50+ chars, 3+ medical terms)
+    2. Extracts health indicators using regex patterns
+    3. Compares values against hardcoded reference ranges
+    4. Identifies abnormalities and categorizes by body system
+    5. Assesses risk level based on abnormality count and patient age
+    6. Generates recommendations for specific abnormalities
+    7. Returns markdown-formatted health report
 
-    The system is designed to complement professional medical care by providing
-    preliminary analysis and health education, while always including appropriate
-    medical disclaimers.
+    Uses async task pattern: initial request returns task ID, poll for completion.
+    Optional Mem0 integration for conversation memory.
 
   use_cases:
     when_to_use:
-      - "Analyzing blood test reports and laboratory results"
-      - "Extracting health indicators from medical documents"
-      - "Understanding abnormal lab values in context"
-      - "Getting preliminary health insights before doctor visits"
-      - "Monitoring health trends over time"
-      - "Educational purposes for understanding medical reports"
+      - "Analyzing text-based blood test reports with standard lab values"
+      - "Extracting common health indicators (CBC, metabolic panel, lipid profile, liver/kidney function, thyroid)"
+      - "Getting preliminary interpretation of abnormal values"
+      - "Understanding health risks based on lab results"
+      - "Receiving lifestyle and dietary recommendations"
 
     when_not_to_use:
-      - "Emergency medical situations - call emergency services"
-      - "Replacing professional medical diagnosis or treatment"
-      - "Making critical health decisions without doctor consultation"
-      - "Analyzing complex medical imaging or specialized tests"
-      - "Pediatric patients (reference ranges differ significantly)"
+      - "Emergency medical situations"
+      - "PDF or image-based reports (text extraction not implemented)"
+      - "Specialized tests not in the 22 supported indicators"
+      - "Prescription or treatment decisions"
+      - "Real-time synchronous responses (uses async task pattern)"
+      - "Pediatric or pregnancy-specific reference ranges"
 
   input_structure: |
-    The skill accepts medical report text in various formats:
+    JSON-RPC 2.0 message/send request:
 
-    Simple text input:
-    "Blood test report showing Hemoglobin: 13.5 g/dL, Glucose: 95 mg/dL..."
-
-    Structured input:
     {
-      "report_text": "Complete medical report text...",
-      "patient_age": 35,
-      "patient_gender": "female",
-      "analysis_type": "comprehensive"
+      "jsonrpc": "2.0",
+      "method": "message/send",
+      "params": {
+        "message": {
+          "role": "user",
+          "kind": "message",
+          "messageId": "uuid",
+          "contextId": "uuid",
+          "taskId": "uuid",
+          "parts": [
+            {
+              "kind": "text",
+              "text": "Analyze blood test: Hemoglobin 12.8 g/dL, Glucose 110 mg/dL..."
+            }
+          ]
+        },
+        "skillId": "health-insights-v1",
+        "configuration": {
+          "acceptedOutputModes": ["application/json"]
+        }
+      },
+      "id": "request-uuid"
     }
 
-    Constraints:
-    - Minimum 50 characters of medical text
-    - Must contain medical terminology
-    - Optional patient demographics for improved analysis
-    - PDF content should be extracted to text first
+    Text must include health indicator values with units.
+    Patient age/gender can be mentioned in text for risk assessment.
 
   output_format: |
-    Comprehensive health analysis report in structured format:
-
-    Success Response:
+    Initial response (task submitted):
     {
-      "success": true,
-      "analysis": {
-        "patient_summary": {
-          "age": 35,
-          "gender": "female",
-          "overall_status": "mildly_abnormal"
+      "jsonrpc": "2.0",
+      "id": "request-uuid",
+      "result": {
+        "id": "task-uuid",
+        "context_id": "context-uuid",
+        "kind": "task",
+        "status": {
+          "state": "submitted",
+          "timestamp": "2026-03-10T08:19:56.063488+00:00"
         },
-        "extracted_indicators": {
-          "hemoglobin": {"value": 13.5, "unit": "g/dL", "status": "normal"},
-          "glucose": {"value": 95, "unit": "mg/dL", "status": "normal"}
-        },
-        "abnormalities": [
-          {
-            "indicator": "cholesterol",
-            "value": 210,
-            "unit": "mg/dL",
-            "status": "high",
-            "significance": "Moderate cardiovascular risk"
-          }
-        ],
-        "health_insights": {
-          "system_analysis": {
-            "blood_count": {"status": "normal"},
-            "metabolic": {"status": "abnormal", "findings": [...]}
-          },
-          "risk_assessment": {
-            "level": "moderate",
-            "factors": ["cardiovascular_risk"]
-          }
-        },
-        "recommendations": [
-          "Reduce dietary saturated fats",
-          "Increase physical activity",
-          "Follow-up with healthcare provider in 3 months"
-        ]
-      },
-      "disclaimer": "This analysis is for informational purposes only..."
-    }
-
-    Error Response:
-    {
-      "success": false,
-      "error": {
-        "code": "INVALID_MEDICAL_CONTENT",
-        "message": "Provided text does not appear to be a valid medical report"
+        "history": [{"role": "user", "parts": [{"kind": "text", "text": "..."}]}]
       }
     }
 
+    Poll with tasks/get until state is "completed":
+    {
+      "jsonrpc": "2.0",
+      "result": {
+        "status": {"state": "completed"},
+        "history": [
+          {"role": "user", "parts": [{"text": "query"}]},
+          {"role": "assistant", "parts": [{"text": "# Health Insights Analysis Report...markdown"}]}
+        ],
+        "artifacts": [
+          {"name": "result", "parts": [{"kind": "text", "text": "markdown report"}]}
+        ]
+      }
+    }
+
+    Report includes: patient summary, test results by system, abnormal findings,
+    risk assessment (low/moderate/high), recommendations, next steps, disclaimer.
+
   error_handling:
-    - "Invalid medical content: Returns error with specific reason"
-    - "Missing health indicators: Provides partial analysis with limitations"
-    - "Incomplete patient data: Proceeds with available information"
-    - "Timeout behavior: Returns partial results within 30 seconds"
-    - "Validation errors: Clear feedback on required input format"
+    - "Text too short (<50 chars): Returns validation error"
+    - "Insufficient medical terms (<3): Returns validation error"
+    - "No extractable indicators: Agent proceeds with available context"
+    - "Missing patient demographics: Risk assessment uses defaults"
+    - "API failures: Standard JSON-RPC error responses"
 
   examples:
-    - title: "Normal Blood Report Analysis"
+    - title: "Blood Test Analysis Request"
       input:
-        report_text: "Complete Blood Count: Hemoglobin 13.5 g/dL, WBC 7,500 /µL, RBC 4.8 M/µL, Platelets 250,000 /µL. Metabolic Panel: Glucose 95 mg/dL, Creatinine 0.9 mg/dL."
-        patient_age: 30
-        patient_gender: "male"
+        text: "Analyze the following blood test report for a 35-year-old male patient. Blood test values: Hemoglobin: 12.8 g/dL, RBC count: 4.2 million/µL, WBC count: 11,200 /µL, Platelets: 240,000 /µL, Fasting Blood Glucose: 110 mg/dL, Total Cholesterol: 220 mg/dL, LDL Cholesterol: 140 mg/dL, HDL Cholesterol: 38 mg/dL, Triglycerides: 190 mg/dL, Vitamin D: 18 ng/mL."
       output:
-        success: true
-        analysis:
-          patient_summary:
-            overall_status: "normal"
-          extracted_indicators:
-            hemoglobin: {value: 13.5, unit: "g/dL", status: "normal"}
-            glucose: {value: 95, unit: "mg/dL", status: "normal"}
-          abnormalities: []
-          recommendations: ["Maintain current healthy lifestyle"]
-
-    - title: "Abnormal Cholesterol Analysis"
-      input:
-        report_text: "Lipid Panel: Total Cholesterol 210 mg/dL, HDL 45 mg/dL, LDL 130 mg/dL, Triglycerides 180 mg/dL"
-        patient_age: 45
-        patient_gender: "female"
-      output:
-        success: true
-        analysis:
-          patient_summary:
-            overall_status: "requires_attention"
-          abnormalities:
-            - indicator: "cholesterol"
-              value: 210
-              unit: "mg/dL"
-              status: "high"
-          recommendations: ["Adopt heart-healthy diet", "Consider cholesterol-lowering medication"]
+        initial_response:
+          status: "submitted"
+          task_id: "9e83c510-5616-49ad-b187-d93cbb800003"
+        final_response:
+          status: "completed"
+          report_sections:
+            - "Patient Summary (age, gender, analysis date)"
+            - "Test Results Analysis (by parameter with normal ranges)"
+            - "Health Risk Assessment (risk level: HIGH)"
+            - "Recommendations (lifestyle, diet, monitoring)"
+            - "Next Steps (medical consultation timeline)"
+          abnormalities_found:
+            - "Fasting Blood Glucose: 110 mg/dL (pre-diabetes)"
+            - "Total Cholesterol: 220 mg/dL (elevated)"
+            - "LDL Cholesterol: 140 mg/dL (high)"
+            - "HDL Cholesterol: 38 mg/dL (low)"
+            - "Triglycerides: 190 mg/dL (elevated)"
 
   best_practices:
     for_developers:
-      - "Always include medical disclaimers in analysis results"
-      - "Validate medical content before processing"
-      - "Use evidence-based reference ranges for different demographics"
-      - "Implement proper error handling for medical data"
-      - "Ensure patient data privacy and HIPAA compliance considerations"
+      - "Ensure text includes indicator values with units for extraction"
+      - "Mention patient age/gender in query for better risk assessment"
+      - "Use async task pattern: submit, poll tasks/get until completed"
+      - "Expect 10-50 second processing time per analysis"
+      - "Medical disclaimers are automatically included in reports"
 
     for_orchestrators:
-      - "Route medical text analysis requests to this skill"
-      - "Chain with general health advice skills for comprehensive guidance"
-      - "Monitor for emergency indicators and route appropriately"
-      - "Implement rate limiting for resource-intensive analysis"
-      - "Cache reference data for improved performance"
+      - "Route blood test analysis queries to this skill"
+      - "Expect async responses, implement polling logic"
+      - "Processing time: 15-50 seconds typical"
+      - "Do not route emergency medical queries"
+      - "Skill uses OpenRouter API, requires OPENROUTER_API_KEY"
+      - "Optional Mem0 integration for conversation context"
 
   installation: |
-    HIA Health Insights Agent installation:
+    Install via uv package manager:
 
-    Required packages:
-    pip install pdfplumber pandas agno langchain
+    uv sync
 
-    Environment setup:
-    export OPENROUTER_API_KEY="your_openrouter_key"
-    export MEM0_API_KEY="your_mem0_key"
+    Environment variables:
+    OPENROUTER_API_KEY=<required>
+    MEM0_API_KEY=<optional>
+    MODEL_NAME=<optional, default: anthropic/claude-3.5-sonnet>
 
-    Optional dependencies:
-    # For enhanced PDF processing
-    pip install pytesseract
+    Run:
+    uv run python -m health_insights_agent
+    # Starts server on port 3773 (configurable in agent_config.json)
 
-    # For advanced statistical analysis
-    pip install scipy scikit-learn
+    Docker:
+    docker run -p 3773:3773 -e OPENROUTER_API_KEY=<key> para5/health-insights-agent:latest
 
   versioning:
     - version: "1.0.0"
-      date: "2025-03-10"
-      changes: "Initial release with core medical analysis capabilities"
+      date: "2026-03-10"
+      changes: "Initial release with regex-based indicator extraction, reference range comparison, risk assessment, and markdown report generation"
     - version: "1.1.0"
       status: "planned"
-      changes: "Enhanced trend analysis and medication interaction insights"
+      changes: "PDF parsing support, historical trend tracking, expanded indicator set"
 
 # Assessment fields for skill negotiation
 assessment:
   keywords:
-    - "medical report analysis"
-    - "blood test interpretation"
+    - "blood test"
+    - "medical report"
     - "health indicators"
-    - "laboratory results"
-    - "medical AI"
-    - "health assessment"
-    - "risk evaluation"
-    - "preventive care"
-    - "clinical analysis"
-    - "medical insights"
+    - "lab results"
+    - "hemoglobin"
+    - "glucose"
+    - "cholesterol"
+    - "abnormal values"
+    - "health risk"
+    - "medical analysis"
 
   specializations:
-    - domain: "medical_analysis"
+    - domain: "blood-test-analysis"
       confidence_boost: 0.4
-    - domain: "healthcare"
+    - domain: "health-assessment"
       confidence_boost: 0.3
-    - domain: "preventive_medicine"
+    - domain: "laboratory-medicine"
       confidence_boost: 0.3
-    - domain: "laboratory_medicine"
-      confidence_boost: 0.4
 
   anti_patterns:
-    - "Emergency medical diagnosis - route to emergency services"
-    - "Prescription medication recommendations"
-    - "Medical imaging analysis"
-    - "Surgical decision support"
-    - "Pediatric medical analysis"
+    - "Emergency diagnosis"
+    - "Prescription recommendations"
+    - "Medical imaging"
+    - "PDF/image analysis"
+    - "Real-time chat"
 
   complexity_indicators:
     simple:
-      - "Single indicator analysis"
-      - "Normal range verification"
-      - "Basic health question"
+      - "Single blood test value check"
+      - "Normal range question"
     medium:
       - "Complete blood count analysis"
-      - "Multi-system evaluation"
-      - "Risk assessment"
+      - "Lipid panel interpretation"
+      - "Multi-parameter report"
     complex:
-      - "Comprehensive medical report analysis"
-      - "Multiple abnormality correlation"
-      - "Age and gender-specific interpretation"
+      - "Comprehensive report with 10+ indicators"
+      - "Multi-system abnormality correlation"
+      - "Age/gender-specific risk assessment"
